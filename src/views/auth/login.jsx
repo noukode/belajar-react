@@ -1,9 +1,78 @@
+import React, { useState, useContext } from "react"
+import { useNavigate } from "react-router-dom"
+import Api from "../../services/api"
+import Cookies from "js-cookie"
+import { AuthContext } from "../../context/AuthContext"
+
+
 export default function Login() {
+
+    const navigate = useNavigate()
+
+    const { setIsAuthenticated } = useContext(AuthContext)
+
+    const [email, setEmail] = useState('')
+    const [password, setPassword] = useState('')
+
+    const [validation, setValidation] = useState([])
+    const [loginFailed, setLoginFailed] = useState([])
+
+    const login = async (e) => {
+        e.preventDefault()
+
+        await Api.post('/api/login', {
+            email: email,
+            password: password,
+        }).then(response => {
+            Cookies.set('token', response.data.data.token)
+            Cookies.set('user', JSON.stringify(response.data.data.user))
+            
+            setIsAuthenticated(true)
+
+            navigate('/admin/dashboard', { replace: true })
+        }).catch(error => {
+            setValidation(error.response.data)
+            setLoginFailed(error.response.data)
+        })
+    }
     return (
-        <div className="p-5 mb-4 bg-light rounded-3 shadow-sm">
-            <div className="container-fluid py-5">
-                <h1 className="display-5 fw-bold">HALAMAN LOGIN</h1>
-                <p className="col-md-12 fs-4">Belajar Full Stack JavaScript Developer dengan Express dan React di SantriKoding.com</p>
+        <div className="row justify-content-center mt-5">
+            <div className="col-md-4">
+                <div className="card border-0 rounded shadow-sm">
+                    <div className="card-body">
+                        <h4>LOGIN</h4>
+                        <hr />
+                        {
+                            validation.errors && (
+                                <div className="alert alert-danger mt-2 pb-0">
+                                    {
+                                        validation.errors.map((error, index) => {
+                                            <p key={index}>{error.path} : {error.msg}</p>
+                                        })
+                                    }
+                                </div>
+                            )
+                        }
+                        {
+                            loginFailed.message && (
+                                <div className="alert alert-danger mt-2 pb-0">
+                                    {loginFailed.message}
+                                </div>
+                            )
+                        }
+                        <form onSubmit={login}>
+                            <div className="form-group mb-3">
+                                <label className="mb-1 fw-bold">Email Address</label>
+                                <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="form-control" placeholder="Email Address" />
+                            </div>
+                            <div className="form-group mb-3">
+                                <label className="mb-1 fw-bold">Password</label>
+                                <input type="password" value={password} onChange={e => setPassword(e.target.value)} className="form-control" placeholder="Password" />
+                            </div>
+                            <button type="submit" className="btn btn-primary w-100">Login</button>
+                        </form>
+                    </div>
+                </div>
             </div>
         </div>
     )
